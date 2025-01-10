@@ -101,7 +101,14 @@ func (r *Repository) GetEstateStats(ctx context.Context, estateId string) (Estat
 	if err != nil {
 		return EstateStats{}, err
 	}
-
+	if count == 0 {
+		return EstateStats{
+			Count:     0,
+			MaxHeight: 0,
+			MinHeight: 0,
+			Median:    0,
+		}, nil
+	}
 	// Query for median
 	err = r.Db.QueryRowContext(ctx, `
 		SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY height)
@@ -109,7 +116,7 @@ func (r *Repository) GetEstateStats(ctx context.Context, estateId string) (Estat
 		WHERE estateId = $1
 	`, estateId).Scan(&median)
 	if err != nil {
-		return EstateStats{}, err
+		median = 0.0
 	}
 
 	return EstateStats{

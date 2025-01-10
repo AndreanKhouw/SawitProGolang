@@ -99,6 +99,9 @@ func (s *Server) GetStats(ctx echo.Context, id string) error {
 		}
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "internal server error"})
 	}
+	if math.IsNaN(stats.Median) {
+		stats.Median = 0.0 // Or set to NaN, depending on your preference
+	}
 
 	response := map[string]interface{}{
 		"count":  stats.Count,
@@ -126,9 +129,7 @@ func (s *Server) GetEstateIdDronePlan(ctx echo.Context, id string) error {
 	totalDistance := totalHorizontal + totalElevation + 2
 
 	response := map[string]interface{}{
-		"total_distance":   totalDistance,
-		"total_elevation":  totalElevation,
-		"total_horizontal": totalHorizontal,
+		"distance": totalDistance,
 	}
 
 	return ctx.JSON(http.StatusOK, response)
