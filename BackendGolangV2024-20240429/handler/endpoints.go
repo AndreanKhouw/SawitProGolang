@@ -42,10 +42,14 @@ func (s *Server) PostEstate(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to insert estate"})
 	}
-
-	return ctx.JSON(http.StatusCreated, map[string]interface{}{
-		"id": id,
-	})
+	uuid := id.Id.String()
+	if uuid != "" {
+		return ctx.JSON(http.StatusOK, map[string]string{
+			"id": uuid,
+		})
+	} else {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to insert estate"})
+	}
 }
 
 func (s *Server) PostTree(ctx echo.Context, estateId string) error {
@@ -77,10 +81,14 @@ func (s *Server) PostTree(ctx echo.Context, estateId string) error {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to add tree"})
 	}
 
-	// Return success response
-	return ctx.JSON(http.StatusOK, repository.TreeResponse{
-		Id: response.Id,
-	})
+	uuid := response.Id.String()
+	if uuid != "" {
+		return ctx.JSON(http.StatusOK, map[string]string{
+			"id": uuid,
+		})
+	} else {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to insert Tree"})
+	}
 }
 
 func (s *Server) GetStats(ctx echo.Context, id string) error {

@@ -39,7 +39,7 @@ paths:
             schema:
               $ref: '#/components/schemas/EstateRequest'
       responses:
-        '201':
+        '200':
           description: Estate successfully created
           content:
             application/json:
