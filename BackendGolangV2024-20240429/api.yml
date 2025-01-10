@@ -1,0 +1,207 @@
+openapi: '3.0.0'
+info:
+  version: 1.0.0
+  title: Estate Service
+  license:
+    name: MIT
+servers:
+  - url: http://localhost
+paths:
+  /hello:
+    get:
+      summary: This is just a test endpoint to get you started.
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Test return
+          content:
+            application/json:    
+              schema:
+                $ref: '#/components/schemas/HelloResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /estate:
+    post:
+      summary: Input estate data (length and width)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstateRequest'
+      responses:
+        '201':
+          description: Estate successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstateResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /estate/{id}/tree:
+    post:
+      summary: Add a tree to a specific estate
+      operationId : PostTree
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TreeRequest"
+      responses:
+        '200':
+          description: Tree successfully added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreeResponse"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /estate/{id}/stats:
+    get:
+      summary: Get tree statistics for an estate
+      operationId : GetStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tree statistics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EstateStatsResponse"
+        '404':
+          description: Estate not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /estate/{id}/drone-plan:
+    get:
+      summary: Get drone distance plan for an estate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Drone plan distance retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dropPlanResponse"
+        '404':
+          description: Estate not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    EstateRequest:
+      type: object
+      required:
+        - length
+        - width
+      properties:
+        length:
+          type: integer
+          format: int32
+        width:
+          type: integer
+          format: int32
+    EstateResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: '123e4567-e89b-12d3-a456-426614174000'
+    TreeRequest:
+      type: object
+      required:
+        - x
+        - y
+        - height
+      properties:
+        x:
+          type: integer
+        y:
+          type: integer
+        height:
+          type: integer
+    TreeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+    EstateStatsResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 10
+        max:
+          type: integer
+          example: 30
+        min:
+          type: integer
+          example: 5
+        median:
+          type: number
+          example: 15.5
+    dropPlanResponse:
+      type: object
+      properties:
+        distance:
+          type: number
+          example: 1200
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: 'An error occurred'
+    HelloResponse: 
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: 'Hello, World!'
