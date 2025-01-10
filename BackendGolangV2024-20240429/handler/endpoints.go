@@ -125,7 +125,7 @@ func (s *Server) GetEstateIdDronePlan(ctx echo.Context, id string) error {
 	}
 	totalElevation := calculateTotalElevation(trees)
 
-	totalHorizontal := (estate.Length * estate.Width) - 1
+	totalHorizontal := ((estate.Length * estate.Width) - 1) * 10
 	totalDistance := totalHorizontal + totalElevation + 2
 
 	response := map[string]interface{}{
@@ -177,4 +177,105 @@ func calculateTotalElevation(trees []repository.Tree) int {
 	totalElevation += trees[len(trees)-1].Height
 
 	return totalElevation
+}
+
+func (s *Server) GetEstateIdDronePlanWithMaxDistance(ctx echo.Context, id string, params generated.GetEstateIdDronePlanWithMaxDistanceParams) error {
+	estate, err := s.Repository.GetEstateById(context.Background(), id)
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, map[string]string{"error": "estate not found"})
+	}
+
+	trees, err := s.Repository.GetTreesByEstateId(context.Background(), id)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+	}
+
+	// Calculate total elevation and horizontal distance
+	totalElevation := calculateTotalElevation(trees)
+	// Ensure each horizontal movement is multiplied by 10 meters
+	totalHorizontal := ((estate.Length * estate.Width) - 1) * 10
+	totalDistance := totalHorizontal + totalElevation + 2
+
+	maxDistance := params.MaxDistance
+	if maxDistance > totalDistance {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "invalid max_distance"})
+	}
+
+	// If max_distance is provided and is less than totalDistance
+	if maxDistance > 0 && totalDistance > maxDistance {
+		landingPoint := calculateLandingPlot(trees, maxDistance, totalHorizontal, estate.Width)
+		response := map[string]interface{}{
+			"distance": maxDistance,
+			"rest":     landingPoint,
+		}
+		return ctx.JSON(http.StatusOK, response)
+	} else {
+		// Otherwise, return the last plot coordinates
+		landingPoint := map[string]int{
+			"x": estate.Length,
+			"y": estate.Width,
+		}
+
+		response := map[string]interface{}{
+			"distance":      maxDistance,
+			"landing_point": landingPoint,
+		}
+		return ctx.JSON(http.StatusOK, response)
+	}
+}
+func calculateLandingPlot(trees []repository.Tree, maxDistance, estateLength, estateWidth int) map[string]int {
+	travelDistance := 1   // The drone starts with an initial elevation of 1m
+	currentElevation := 1 // Start the drone at an elevation of 1 meter
+	landingPoint := map[string]int{}
+
+	// Start from plot (1,1)
+	for y := 1; y <= estateWidth; y++ {
+		// Move horizontally across the row (zigzag pattern)
+		for x := 1; x <= estateLength; x++ {
+			// Find the tree in this plot (or no tree if there's none)
+			tree := findTreeAtPlot(trees, x, y)
+
+			// If there's a tree, adjust the elevation accordingly
+			if tree != nil {
+				heightDifference := int(math.Abs(float64(tree.Height - currentElevation)))
+
+				// Update the travel distance with the elevation difference
+				travelDistance += heightDifference
+
+				// Update the current elevation to match the tree's height + 1
+				currentElevation = tree.Height + 1
+			}
+
+			// After each plot move, add 10 meters to the travel distance
+			travelDistance += 10
+
+			// Check if the drone has exceeded or reached the max distance
+			if travelDistance >= maxDistance {
+				// Found the landing point where the drone stops
+				landingPoint = map[string]int{"x": x, "y": y}
+				return landingPoint
+			}
+		}
+
+		// After reaching the end of a row, zigzag back to the previous row
+		estateLength, estateWidth = estateWidth, estateLength
+	}
+
+	// If we exit the loop and the max distance wasn't reached, return the last plot
+	totalPlots := estateLength * estateWidth
+	lastPlotX := (totalPlots - 1) % estateLength
+	lastPlotY := (totalPlots - 1) / estateLength
+	landingPoint = map[string]int{"x": lastPlotX + 1, "y": lastPlotY + 1}
+
+	return landingPoint
+}
+
+// Helper function to find the tree at a specific plot coordinate
+func findTreeAtPlot(trees []repository.Tree, x, y int) *repository.Tree {
+	for _, tree := range trees {
+		if tree.X == x && tree.Y == y {
+			return &tree
+		}
+	}
+	return nil // No tree at this plot
 }

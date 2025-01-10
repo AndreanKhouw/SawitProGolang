@@ -125,6 +125,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /estate/{id}/drone-plan-with-max-distance:
+    get:
+      summary: Get drone plan with max distance for an estate, considering the battery limit.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_distance
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: The maximum distance the drone can travel with its main battery, in meters.
+      responses:
+        '200':
+          description: Drone plan distance retrieved considering max distance.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dropPlanResponseWithMaxDistance"
 components:
   schemas:
     EstateRequest:
@@ -189,6 +211,19 @@ components:
         distance:
           type: number
           example: 1200
+    dropPlanResponseWithMaxDistance:
+      type: object
+      properties:
+        distance:
+          type: integer
+          example: 1200
+        landing_point:
+          type: object
+          properties:
+            x:
+              type: integer
+            y:
+              type: integer
     ErrorResponse:
       type: object
       required:
